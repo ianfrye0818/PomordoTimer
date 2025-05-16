@@ -44,10 +44,6 @@ export const Route = createRootRoute({
         sizes: '16x16',
         href: '/favicon-16x16.png',
       },
-      {
-        rel: 'mainfest',
-        href: '/site.webmanifest',
-      },
     ],
   }),
 
@@ -64,6 +60,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        <link rel="manifest" href="/site.webmanifest" />
       </head>
       <body>
         {children}
