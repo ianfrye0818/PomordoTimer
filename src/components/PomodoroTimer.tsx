@@ -256,7 +256,7 @@ export default function PomodoroTimer() {
                 value="work"
                 className={
                   mode === 'work'
-                    ? 'bg-green-100 data-[state=active]:bg-green-200'
+                    ? 'bg-green-600 data-[state=active]:bg-green-500'
                     : ''
                 }
               >
@@ -266,7 +266,7 @@ export default function PomodoroTimer() {
                 value="shortBreak"
                 className={
                   mode === 'shortBreak'
-                    ? 'bg-red-100 data-[state=active]:bg-red-200'
+                    ? 'bg-rose-600  data-[state=active]:bg-rose-500'
                     : ''
                 }
               >
@@ -276,7 +276,7 @@ export default function PomodoroTimer() {
                 value="longBreak"
                 className={
                   mode === 'longBreak'
-                    ? 'bg-red-100 data-[state=active]:bg-red-200'
+                    ? 'bg-pink-600 data-[state=active]:bg-pink-500'
                     : ''
                 }
               >
@@ -289,7 +289,7 @@ export default function PomodoroTimer() {
               className={cn(
                 'text-6xl font-bold tabular-nums mb-8 p-8 rounded-xl shadow-md',
                 mode === 'work' ? 'text-green-600' : 'text-red-600',
-                'bg-slate-50 border',
+                'bg-background',
               )}
             >
               {loading ? (
