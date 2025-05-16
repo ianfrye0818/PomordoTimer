@@ -1,0 +1,17 @@
+node_modules
+.DS_Store
+dist
+dist-ssr
+*.local
+.output
+.vinxi
+.env.production
+.env.local
+.env.development
+.env
+
+routeTree.gen.ts
+package-lock.yaml
+.vscode
+.jetbrains
+notes.md
