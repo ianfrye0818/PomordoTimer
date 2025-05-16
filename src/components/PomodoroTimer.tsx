@@ -3,7 +3,16 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { DialogTrigger } from '@radix-ui/react-dialog'
 import { Button } from './ui/button'
-import { Check, Pause, Play, Plus, RotateCcw, Settings, X } from 'lucide-react'
+import {
+  Check,
+  Loader2,
+  Pause,
+  Play,
+  Plus,
+  RotateCcw,
+  Settings,
+  X,
+} from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 import { Input } from './ui/input'
 import { cn } from '@/lib/utils'
@@ -39,6 +48,7 @@ export default function PomodoroTimer() {
   const [mode, setMode] = useState<Mode>('work')
   const [sessionCount, setSessionCount] = useState(0)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   // Task State
   const [tasks, setTasks] = useState<Task[]>([])
@@ -47,8 +57,13 @@ export default function PomodoroTimer() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
+  console.log({ loading })
   useEffect(() => {
     audioRef.current = new Audio('/bell.wav')
+    loadTasks()
+    loadSettings()
+
+    setLoading(false)
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
@@ -140,6 +155,28 @@ export default function PomodoroTimer() {
     }
   }
 
+  const saveTasks = (updatedTasks: Task[]) => {
+    localStorage.setItem('tasks', JSON.stringify(updatedTasks))
+  }
+
+  const loadTasks = () => {
+    const tasks = localStorage.getItem('tasks')
+    if (tasks) {
+      const parsedTasks = JSON.parse(tasks) as Task[]
+      setTasks(parsedTasks)
+    }
+  }
+
+  const loadSettings = () => {
+    const storedSettings = localStorage.getItem('settings')
+    console.log({ storedSettings })
+    if (storedSettings) {
+      const parsedSettings = JSON.parse(storedSettings) as Settings
+      console.log({ parsedSettings })
+      setSettings(parsedSettings)
+    }
+  }
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
@@ -153,30 +190,37 @@ export default function PomodoroTimer() {
   }
 
   const saveSettings = (newSettings: Settings) => {
+    localStorage.setItem('settings', JSON.stringify(settings))
     setSettings(newSettings)
     setSettingsOpen(false)
   }
 
   const addTask = () => {
     if (newTask.trim()) {
-      setTasks([
-        ...tasks,
-        { id: Date.now().toString(), text: newTask, isCompleted: false },
-      ])
+      const newTaskItem = {
+        id: Date.now().toString(),
+        text: newTask,
+        isCompleted: false,
+      }
+      const updatedTasks = [...tasks, newTaskItem]
+      setTasks(updatedTasks)
       setNewTask('')
+      saveTasks(updatedTasks)
     }
   }
 
   const toggleTaskCompletion = (id: string) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === id ? { ...task, isCompleted: !task.isCompleted } : task,
-      ),
+    const updatedTasks = tasks.map((task) =>
+      task.id === id ? { ...task, isCompleted: !task.isCompleted } : task,
     )
+    setTasks(updatedTasks)
+    saveTasks(updatedTasks)
   }
 
   const removeTask = (id: string) => {
-    setTasks(tasks.filter((task) => task.id !== id))
+    const updatedTasks = tasks.filter((task) => task.id !== id)
+    setTasks(updatedTasks)
+    saveTasks(updatedTasks)
   }
 
   return (
@@ -248,7 +292,11 @@ export default function PomodoroTimer() {
                 'bg-slate-50 border',
               )}
             >
-              {formatTime(timeLeft)}
+              {loading ? (
+                <Loader2 className="h-4 w-4 text-black" />
+              ) : (
+                formatTime(timeLeft)
+              )}
             </div>
 
             <div className="flex space-x-4">
@@ -420,7 +468,7 @@ function SettingsForm({
         </Label>
         <Input
           id="sessionsBeforeLongBreak"
-          name="sessionsBeforeLongBreak"
+          name="sessionBeforeLongBreak"
           type="number"
           min="1"
           value={formValues.sessionBeforeLongBreak}

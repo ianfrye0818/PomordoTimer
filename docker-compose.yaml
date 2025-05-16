@@ -1,0 +1,13 @@
+services:
+  pomodoro:
+    container_name: pomodoro-v1.00
+    image: ianfrye/pomodoro-timer
+    networks:
+      proxy:
+      default_main:
+
+networks:
+  proxy:
+    external: true
+  default_main:
+    external: true
