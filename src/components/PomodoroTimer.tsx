@@ -12,7 +12,7 @@ export default function PomodoroTimer() {
     longBreakTime: 15,
     shortBreakTime: 5,
     sessionBeforeLongBreak: 4,
-    workTime: 0.2,
+    workTime: 25,
     isAudioEnabled: true,
   })
 
