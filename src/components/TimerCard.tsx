@@ -11,9 +11,8 @@ import {
 } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 import { cn } from '@/lib/utils'
-import type { Mode } from '@/types/pomodoro'
 import { SettingsForm } from './SettingsForm'
-import { useTimer } from './timer-provider'
+import { useTimer, type Mode } from './timer-provider'
 import FormDialog from './ui/FormDialog'
 
 export function TimerCard() {

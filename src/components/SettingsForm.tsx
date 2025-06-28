@@ -8,8 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
-import { TIME_PRESETS } from '@/types/pomodoro'
-import { useTimer } from './timer-provider'
+import { TIME_PRESETS, useTimer } from './timer-provider'
 import { useForm } from 'react-hook-form'
 import { FormInputItem } from './ui/FormInputItem'
 import { z } from 'zod'

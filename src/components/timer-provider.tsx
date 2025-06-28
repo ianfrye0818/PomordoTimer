@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
-import { toast } from 'sonner'
-export type Mode = 'work' | 'shortBreak' | 'longBreak'
 
+export type Mode = 'work' | 'shortBreak' | 'longBreak'
 export class TimerError extends Error {
   constructor(
     message: string,
@@ -96,7 +95,7 @@ const TimerContext = createContext<TimerContextType>({
 export function TimerProvider({ children }: { children: React.ReactNode }) {
   const [sessionCount, setSessionCount] = useState(0)
   const [errors, setErrors] = useState<TimerError[]>([])
-  const [time, setTime] = useState(0)
+  const [time, setTime] = useState(25 * 60) // Initialize with work time
   const [mode, setMode] = useState<Mode>('work')
   const [isRunning, setIsRunning] = useState(false)
   const [tasks, setTasks] = useState<Task[]>([])
@@ -109,12 +108,34 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
+  const AUDIO_FILE = '/audio/bell.mp3'
+
   const playSound = () => {
     if (audioRef.current) {
       if (isAudioEnabled) {
-        audioRef.current.play()
+        audioRef.current.play().catch((error) => {
+          console.error('Failed to play audio:', error)
+          setErrors((prev) => [
+            ...prev,
+            new TimerError(
+              'Failed to play audio',
+              'error',
+              Date.now(),
+              'TimerProvider',
+              error,
+            ),
+          ])
+        })
       } else {
-        toast.error('Audio is disabled')
+        setErrors((prev) => [
+          ...prev,
+          new TimerError(
+            'Audio is disabled',
+            'warning',
+            Date.now(),
+            'TimerProvider',
+          ),
+        ])
       }
     }
   }
@@ -139,6 +160,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     }
     setMode('work')
     setTime(workTime * 60)
+    setSessionCount(0)
   }
 
   const addTask = (task: Task) => {
@@ -188,6 +210,14 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       setLongBreakTime(props.settings.longBreakTime)
       setSessionsBeforeLongBreak(props.settings.sessionsBeforeLongBreak)
       localStorage.setItem('pomodoro-settings', JSON.stringify(props.settings))
+
+      if (mode === 'work') {
+        setTime(props.settings.workTime * 60)
+      } else if (mode === 'shortBreak') {
+        setTime(props.settings.shortBreakTime * 60)
+      } else if (mode === 'longBreak') {
+        setTime(props.settings.longBreakTime * 60)
+      }
     }
 
     if (props.isAudioEnabled !== undefined) {
@@ -200,13 +230,9 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   }
 
   const toggleTaskCompletion = (id: string) => {
-    console.log(tasks)
     const updatedTasks = tasks.map((task) =>
       task.id === id ? { ...task, isCompleted: !task.isCompleted } : task,
     )
-    debugger
-    console.log(updatedTasks)
-
     setTasks(updatedTasks)
     saveTasks(updatedTasks)
   }
@@ -253,6 +279,17 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     loadTasks()
   }, [])
 
+  // Update time when settings are loaded to set correct initial time
+  useEffect(() => {
+    setTime(
+      mode === 'work'
+        ? workTime * 60
+        : mode === 'shortBreak'
+          ? shortBreakTime * 60
+          : longBreakTime * 60,
+    )
+  }, [workTime, shortBreakTime, longBreakTime, mode])
+
   // Update time ever second if timer is running
   useEffect(() => {
     if (isRunning) {
@@ -263,20 +300,36 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         } else {
           playSound()
           setIsRunning(false)
-          setTime(
+
+          // Increment session count when work session ends
+          if (mode === 'work') {
+            setSessionCount((prev) => prev + 1)
+          }
+
+          // Determine next mode based on session count
+          const nextMode =
             mode === 'work'
-              ? workTime * 60
-              : mode === 'shortBreak'
-                ? shortBreakTime * 60
-                : longBreakTime * 60,
-          )
-          handleModeChange(mode === 'work' ? 'shortBreak' : 'longBreak')
+              ? (sessionCount + 1) % sessionsBeforeLongBreak === 0
+                ? 'longBreak'
+                : 'shortBreak'
+              : 'work'
+
+          handleModeChange(nextMode)
         }
       }, 1000)
 
       return () => clearInterval(interval)
     }
-  }, [isRunning, time, mode, workTime, shortBreakTime, longBreakTime])
+  }, [
+    isRunning,
+    time,
+    mode,
+    workTime,
+    shortBreakTime,
+    longBreakTime,
+    sessionCount,
+    sessionsBeforeLongBreak,
+  ])
 
   return (
     <TimerContext.Provider
@@ -284,7 +337,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         time,
         mode,
         isRunning,
-        setMode,
+        setMode: handleModeChange, // Connect setMode to handleModeChange
         playSound,
         startTimer,
         addTask,
@@ -306,6 +359,9 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
+      <audio ref={audioRef} preload="auto">
+        <source src={AUDIO_FILE} type="audio/mpeg" />
+      </audio>
     </TimerContext.Provider>
   )
 }
