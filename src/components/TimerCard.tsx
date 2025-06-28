@@ -8,6 +8,7 @@ import {
   Settings as SettingsIcon,
   Volume2Icon,
   VolumeOffIcon,
+  Maximize2,
 } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 import { cn } from '@/lib/utils'
@@ -32,6 +33,15 @@ export function TimerCard() {
           <div className="flex items-center justify-between">
             <CardTitle>Timer</CardTitle>
             <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant={'outline'}
+                size={'icon'}
+                onClick={timer.enterFullscreen}
+                title="Enter fullscreen mode"
+              >
+                <Maximize2 className="size-4" />
+              </Button>
               <Button
                 type="button"
                 variant={'outline'}

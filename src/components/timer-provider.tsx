@@ -31,11 +31,14 @@ type TimerContextType = {
   time: number
   mode: 'work' | 'shortBreak' | 'longBreak'
   isRunning: boolean
+  isFullscreen: boolean
   setMode: (mode: Mode) => void
   playSound: () => void
   startTimer: () => void
   pauseTimer: () => void
   resetTimer: () => void
+  enterFullscreen: () => void
+  exitFullscreen: () => void
   addTask: (task: Task) => void
   removeTask: (id: string) => void
   toggleTaskCompletion: (id: string) => void
@@ -71,11 +74,14 @@ const TimerContext = createContext<TimerContextType>({
   time: 0,
   mode: 'work',
   isRunning: false,
+  isFullscreen: false,
   setMode: () => {},
   playSound: () => {},
   startTimer: () => {},
   pauseTimer: () => {},
   resetTimer: () => {},
+  enterFullscreen: () => {},
+  exitFullscreen: () => {},
   addTask: () => {},
   removeTask: () => {},
   saveSettings: () => {},
@@ -98,6 +104,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const [time, setTime] = useState(25 * 60) // Initialize with work time
   const [mode, setMode] = useState<Mode>('work')
   const [isRunning, setIsRunning] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const [tasks, setTasks] = useState<Task[]>([])
   const [workTime, setWorkTime] = useState(25)
   const [shortBreakTime, setShortBreakTime] = useState(5)
@@ -273,6 +280,14 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const enterFullscreen = () => {
+    setIsFullscreen(true)
+  }
+
+  const exitFullscreen = () => {
+    setIsFullscreen(false)
+  }
+
   // Load settings and tasks on app mount
   useEffect(() => {
     loadSettings('all')
@@ -337,7 +352,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         time,
         mode,
         isRunning,
-        setMode: handleModeChange, // Connect setMode to handleModeChange
+        isFullscreen,
+        setMode: handleModeChange,
         playSound,
         startTimer,
         addTask,
@@ -352,6 +368,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         isAudioEnabled,
         pauseTimer,
         resetTimer,
+        enterFullscreen,
+        exitFullscreen,
         audioRef,
         timerRef,
         errors,
