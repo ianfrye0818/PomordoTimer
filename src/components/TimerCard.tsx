@@ -1,10 +1,7 @@
 import { useState } from 'react'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
-import { DialogTrigger } from '@radix-ui/react-dialog'
 import {
-  Loader2,
   Pause,
   Play,
   RotateCcw,
@@ -14,37 +11,14 @@ import {
 } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 import { cn } from '@/lib/utils'
-import type { Mode, Settings } from '@/types/pomodoro'
+import type { Mode } from '@/types/pomodoro'
 import { SettingsForm } from './SettingsForm'
+import { useTimer } from './timer-provider'
+import FormDialog from './ui/FormDialog'
 
-interface TimerCardProps {
-  mode: Mode
-  timeLeft: number
-  isRunning: boolean
-  sessionCount: number
-  settings: Settings
-  loading: boolean
-  onModeChange: (mode: Mode) => void
-  onStart: () => void
-  onStop: () => void
-  onReset: () => void
-  onSettingsChange: (settings: Settings) => void
-}
-
-export function TimerCard({
-  mode,
-  timeLeft,
-  isRunning,
-  sessionCount,
-  settings,
-  loading,
-  onModeChange,
-  onStart,
-  onStop,
-  onReset,
-  onSettingsChange,
-}: TimerCardProps) {
-  const [settingsOpen, setSettingsOpen] = useState(false)
+export function TimerCard() {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const timer = useTimer()
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -53,129 +27,125 @@ export function TimerCard({
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Timer</CardTitle>
-          <div className="flex items-center gap-2">
-            <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-              <DialogTrigger asChild>
-                <Button variant={'outline'} size={'icon'}>
-                  <SettingsIcon className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Timer Settings</DialogTitle>
-                </DialogHeader>
-                <SettingsForm
-                  settings={settings}
-                  onSave={(newSettings) => {
-                    onSettingsChange(newSettings)
-                    setSettingsOpen(false)
-                  }}
-                />
-              </DialogContent>
-            </Dialog>
-            <Button
-              variant={'outline'}
-              size={'icon'}
-              onClick={() =>
-                onSettingsChange({
-                  ...settings,
-                  isAudioEnabled: !settings.isAudioEnabled,
-                })
-              }
-            >
-              {settings.isAudioEnabled ? (
-                <Volume2Icon className="h-4 w-4" />
-              ) : (
-                <VolumeOffIcon className="h-4 w-4" />
-              )}
-            </Button>
+    <>
+      <Card className="w-full">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Timer</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant={'outline'}
+                size={'icon'}
+                onClick={() => setIsSettingsOpen(true)}
+              >
+                <SettingsIcon className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                variant={'outline'}
+                size={'icon'}
+                onClick={() =>
+                  timer.saveSettings({ isAudioEnabled: !timer.isAudioEnabled })
+                }
+              >
+                {timer.isAudioEnabled ? (
+                  <Volume2Icon className="h-4 w-4" />
+                ) : (
+                  <VolumeOffIcon className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Tabs
-          defaultValue="work"
-          value={mode}
-          onValueChange={(value) => onModeChange(value as Mode)}
-          className="w-full"
-        >
-          <TabsList>
-            <TabsTrigger
-              value="work"
-              className={
-                mode === 'work'
-                  ? 'bg-green-600 data-[state=active]:bg-green-500'
-                  : ''
-              }
-            >
-              Work
-            </TabsTrigger>
-            <TabsTrigger
-              value="shortBreak"
-              className={
-                mode === 'shortBreak'
-                  ? 'bg-rose-600  data-[state=active]:bg-rose-500'
-                  : ''
-              }
-            >
-              Short Break
-            </TabsTrigger>
-            <TabsTrigger
-              value="longBreak"
-              className={
-                mode === 'longBreak'
-                  ? 'bg-pink-600 data-[state=active]:bg-pink-500'
-                  : ''
-              }
-            >
-              Long Break
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        <div className="mt-8 flex flex-col items-center">
-          <div
-            className={cn(
-              'text-6xl font-bold tabular-nums mb-8 p-8 rounded-xl shadow-md',
-              mode === 'work' ? 'text-green-600' : 'text-red-600',
-              'bg-background',
-            )}
+        </CardHeader>
+        <CardContent>
+          <Tabs
+            defaultValue="work"
+            value={timer.mode}
+            onValueChange={(value) => timer.setMode(value as Mode)}
+            className="w-full"
           >
-            {loading ? (
-              <Loader2 className="h-4 w-4 text-black" />
-            ) : (
-              formatTime(timeLeft)
-            )}
-          </div>
+            <TabsList>
+              <TabsTrigger
+                value="work"
+                className={
+                  timer.mode === 'work'
+                    ? 'bg-green-600 data-[state=active]:bg-green-500'
+                    : ''
+                }
+              >
+                Work
+              </TabsTrigger>
+              <TabsTrigger
+                value="shortBreak"
+                className={
+                  timer.mode === 'shortBreak'
+                    ? 'bg-rose-600  data-[state=active]:bg-rose-500'
+                    : ''
+                }
+              >
+                Short Break
+              </TabsTrigger>
+              <TabsTrigger
+                value="longBreak"
+                className={
+                  timer.mode === 'longBreak'
+                    ? 'bg-pink-600 data-[state=active]:bg-pink-500'
+                    : ''
+                }
+              >
+                Long Break
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-          <div className="flex space-x-4">
-            <Button onClick={isRunning ? onStop : onStart} size="lg">
-              {isRunning ? (
-                <Pause className="mr-2 h-4 w-4" />
-              ) : (
-                <Play className="mr-2 h-4 w-4" />
+          <div className="mt-8 flex flex-col items-center">
+            <div
+              className={cn(
+                'text-6xl font-bold tabular-nums mb-8 p-8 rounded-xl shadow-md',
+                timer.mode === 'work' ? 'text-green-600' : 'text-red-600',
+                'bg-background',
               )}
-              {isRunning ? 'Pause' : 'Start'}
-            </Button>
-            <Button variant="outline" onClick={onReset} size="lg">
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Reset
-            </Button>
+            >
+              {formatTime(timer.time)}
+            </div>
+
+            <div className="flex space-x-4">
+              <Button
+                onClick={timer.isRunning ? timer.pauseTimer : timer.startTimer}
+                size="lg"
+              >
+                {timer.isRunning ? (
+                  <Pause className="mr-2 h-4 w-4" />
+                ) : (
+                  <Play className="mr-2 h-4 w-4" />
+                )}
+                {timer.isRunning ? 'Pause' : 'Start'}
+              </Button>
+              <Button variant="outline" onClick={timer.resetTimer} size="lg">
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Reset
+              </Button>
+            </div>
           </div>
-        </div>
-      </CardContent>
-      <CardFooter className="flex justify-center">
-        <div className="text-sm text-muted-foreground">
-          Session{' '}
-          {Math.floor(sessionCount / settings.sessionBeforeLongBreak) + 1},
-          Pomodoro {(sessionCount % settings.sessionBeforeLongBreak) + 1} of{' '}
-          {settings.sessionBeforeLongBreak}
-        </div>
-      </CardFooter>
-    </Card>
+        </CardContent>
+        <CardFooter className="flex justify-center">
+          <div className="text-sm text-muted-foreground">
+            Session{' '}
+            {Math.floor(timer.sessionCount / timer.sessionsBeforeLongBreak) + 1}
+            , Pomodoro{' '}
+            {(timer.sessionCount % timer.sessionsBeforeLongBreak) + 1} of{' '}
+            {timer.sessionsBeforeLongBreak}
+          </div>
+        </CardFooter>
+      </Card>
+      <FormDialog
+        title="Timer Settings"
+        setOpen={setIsSettingsOpen}
+        open={isSettingsOpen}
+      >
+        <SettingsForm setOpen={() => setIsSettingsOpen(false)} />
+      </FormDialog>
+    </>
   )
 }

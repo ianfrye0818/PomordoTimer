@@ -23,6 +23,7 @@ export type PomodoroTimerError = {
 }
 
 export const TIME_PRESETS = [
+  { label: '10 seconds', value: 0.16666666666666666 },
   { label: '30 seconds', value: 0.5 },
   { label: '1 minute', value: 1 },
   { label: '5 minutes', value: 5 },
