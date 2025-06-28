@@ -1,43 +1,27 @@
-import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
-import { Input } from './ui/input'
 import { Check, Plus, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { Task, PomodoroTimerError } from '@/types/pomodoro'
+import { useTimer, type Task } from './timer-provider'
+import { useForm } from 'react-hook-form'
+import { FormInputItem } from './ui/FormInputItem'
+import { Form } from './ui/form'
 
-interface TasksCardProps {
-  tasks: Task[]
-  errors: PomodoroTimerError[]
-  onTasksChange: (tasks: Task[]) => void
-}
+export function TasksCard() {
+  const { addTask, removeTask, toggleTaskCompletion, tasks, errors } =
+    useTimer()
 
-export function TasksCard({ tasks, errors, onTasksChange }: TasksCardProps) {
-  const [newTask, setNewTask] = useState('')
+  const form = useForm<Task>({
+    defaultValues: {
+      text: '',
+      isCompleted: false,
+    },
+  })
 
-  const addTask = () => {
-    if (newTask.trim()) {
-      const newTaskItem = {
-        id: Date.now().toString(),
-        text: newTask,
-        isCompleted: false,
-      }
-      const updatedTasks = [...tasks, newTaskItem]
-      onTasksChange(updatedTasks)
-      setNewTask('')
-    }
-  }
-
-  const toggleTaskCompletion = (id: string) => {
-    const updatedTasks = tasks.map((task) =>
-      task.id === id ? { ...task, isCompleted: !task.isCompleted } : task,
-    )
-    onTasksChange(updatedTasks)
-  }
-
-  const removeTask = (id: string) => {
-    const updatedTasks = tasks.filter((task) => task.id !== id)
-    onTasksChange(updatedTasks)
+  const onSubmit = (data: Task) => {
+    const id = crypto.randomUUID()
+    addTask({ ...data, id })
+    form.reset()
   }
 
   return (
@@ -46,19 +30,24 @@ export function TasksCard({ tasks, errors, onTasksChange }: TasksCardProps) {
         <CardTitle>Tasks</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex space-x-2 mb-4">
-          <Input
-            placeholder="Add a new task..."
-            value={newTask}
-            onChange={(e) => setNewTask(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') addTask()
-            }}
-          />
-          <Button onClick={addTask}>
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
+        {/* Add Task Form */}
+        <Form {...form}>
+          <form
+            className="flex w-full items-center gap-1 mb-4"
+            onSubmit={form.handleSubmit(onSubmit)}
+          >
+            <div className="flex-1">
+              <FormInputItem
+                control={form.control}
+                name="text"
+                placeholder="Add a new task..."
+              />
+            </div>
+            <Button type="submit">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </form>
+        </Form>
 
         <div className="space-y-2 max-h-[400px] overflow-y-auto">
           {tasks.length === 0 ? (
@@ -100,13 +89,10 @@ export function TasksCard({ tasks, errors, onTasksChange }: TasksCardProps) {
                     {task.text}
                   </span>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <X
+                  className="size-5 cursor-pointer hover:text-red-500"
                   onClick={() => removeTask(task.id)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                />
               </div>
             ))
           )}
