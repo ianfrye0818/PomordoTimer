@@ -117,39 +117,59 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
 
   const AUDIO_FILE = '/audio/bell.mp3'
 
-  const playSound = () => {
-    if (audioRef.current) {
-      if (isAudioEnabled) {
-        audioRef.current.play().catch((error) => {
-          console.error('Failed to play audio:', error)
-          setErrors((prev) => [
-            ...prev,
-            new TimerError(
-              'Failed to play audio',
-              'error',
-              Date.now(),
-              'TimerProvider',
-              error,
-            ),
-          ])
-        })
-      } else {
+  const playSound = (repeat: number = 1) => {
+    if (!audioRef.current || !isAudioEnabled) return
+
+    let count = 0
+    const playLoop = () => {
+      audioRef.current!.currentTime = 0
+      audioRef.current!.play().catch((error) => {
+        console.error('Failed to play audio:', error)
         setErrors((prev) => [
           ...prev,
           new TimerError(
-            'Audio is disabled',
-            'warning',
+            'Failed to play audio',
+            'error',
             Date.now(),
             'TimerProvider',
+            error,
           ),
         ])
+      })
+      count++
+      if (count < repeat) {
+        audioRef.current!.onended = playLoop
+      } else {
+        audioRef.current!.onended = null
       }
     }
+    playLoop()
   }
 
   const startTimer = () => {
     if (isRunning) {
       return
+    }
+
+    if (audioRef.current) {
+      // Since audio is blocked by the browser, we need to have the user "enable" it by interacting with the page
+      // This is kind of a hack, but it's the only way I know to get the audio work on a mobile browswer
+      // When a user hits the start timer button, we "play" the audio muted
+      // Then we pause it and set the current time to 0
+      // Then we unmute it so that we can play it again when the timer ends
+      const audio = audioRef.current
+      const originalMuted = audio.muted
+
+      audio.muted = true
+
+      audio
+        .play()
+        .then(() => {
+          audio.pause()
+          audio.currentTime = 0
+          audio.muted = originalMuted // restore the mute state
+        })
+        .catch((err) => console.warn('Audio unlock failed', err))
     }
     setIsRunning(true)
   }
@@ -313,7 +333,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         if (time > 0) {
           setTime((prev) => prev - 1)
         } else {
-          playSound()
+          playSound(3)
           setIsRunning(false)
 
           // Increment session count when work session ends
