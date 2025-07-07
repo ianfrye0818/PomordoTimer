@@ -13,6 +13,7 @@ import { useForm } from 'react-hook-form'
 import { FormInputItem } from './ui/FormInputItem'
 import { z } from 'zod'
 import { Form } from './ui/form'
+import { useTheme } from './theme-provider'
 
 const schema = z.object({
   workTime: z.coerce.number().min(0.5).max(60).step(0.5).default(25),
@@ -20,11 +21,13 @@ const schema = z.object({
   longBreakTime: z.coerce.number().min(0.5).max(60).step(0.5).default(15),
   sessionsBeforeLongBreak: z.coerce.number().min(1).max(10).default(4),
   isAudioEnabled: z.boolean().default(true),
+  theme: z.enum(['light', 'dark', 'system']).default('system'),
 })
 
 type SettingsFormValues = z.infer<typeof schema>
 
 export function SettingsForm({ setOpen }: { setOpen: () => void }) {
+  const { theme, setTheme } = useTheme()
   const {
     workTime,
     shortBreakTime,
@@ -40,12 +43,14 @@ export function SettingsForm({ setOpen }: { setOpen: () => void }) {
       sessionsBeforeLongBreak,
       shortBreakTime,
       isAudioEnabled,
+      theme,
     },
   })
 
   const onSubmit = (data: SettingsFormValues) => {
-    const { isAudioEnabled, ...settings } = data
+    const { isAudioEnabled, theme, ...settings } = data
     saveSettings({ settings, isAudioEnabled })
+    setTheme(theme)
     setOpen()
   }
 
@@ -148,6 +153,24 @@ export function SettingsForm({ setOpen }: { setOpen: () => void }) {
             name="sessionsBeforeLongBreak"
             type="number"
           />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="theme">Theme</Label>
+          <Select
+            value={form.watch('theme')}
+            onValueChange={(value) =>
+              form.setValue('theme', value as 'light' | 'dark' | 'system')
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select theme" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="light">Light</SelectItem>
+              <SelectItem value="dark">Dark</SelectItem>
+              <SelectItem value="system">System</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="flex items-center gap-2">
