@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
-import { Button } from './ui/button'
-import { X, Pause, Play, RotateCcw } from 'lucide-react'
-import { useTimer, type Mode } from './timer-provider'
 import { cn } from '@/lib/utils'
+import { Pause, Play, RotateCcw, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTimer, type Mode, type Task } from './timer-provider'
+import { Button } from './ui/button'
+import { Checkbox } from './ui/checkbox'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 
 export function FullscreenTimer() {
@@ -13,6 +14,79 @@ export function FullscreenTimer() {
     const secs = seconds % 60
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
+
+  // Get simplified tasks: only non-completed, limited to 5
+  const { simplifiedTasks, totalIncompleteCount } = useMemo(() => {
+    const incompleteTasks = timer.tasks
+      .filter((task) => !task.isCompleted)
+      .sort((a, b) => a.order - b.order)
+    return {
+      simplifiedTasks: incompleteTasks.slice(0, 5),
+      totalIncompleteCount: incompleteTasks.length,
+    }
+  }, [timer.tasks])
+
+  // Track tasks for animation purposes
+  const [displayedTasks, setDisplayedTasks] = useState<Task[]>(simplifiedTasks)
+  const [exitingTaskIds, setExitingTaskIds] = useState<Set<string>>(new Set())
+  const [enteringTaskIds, setEnteringTaskIds] = useState<Set<string>>(new Set())
+  const previousTaskIdsRef = useRef<Set<string>>(
+    new Set(simplifiedTasks.map((t) => t.id)),
+  )
+
+  // Handle task animations
+  useEffect(() => {
+    const currentTaskIds = new Set(simplifiedTasks.map((t) => t.id))
+    const previousTaskIds = previousTaskIdsRef.current
+
+    // Find tasks that are exiting (were in previous but not in current)
+    const exitingIds = Array.from(previousTaskIds).filter(
+      (id) => !currentTaskIds.has(id),
+    )
+    // Find tasks that are entering (are in current but not in previous)
+    const enteringIds = Array.from(currentTaskIds).filter(
+      (id) => !previousTaskIds.has(id),
+    )
+
+    if (exitingIds.length > 0) {
+      // Mark tasks as exiting
+      setExitingTaskIds(new Set(exitingIds))
+
+      // After exit animation, update displayed tasks and trigger enter animations
+      setTimeout(() => {
+        setExitingTaskIds(new Set())
+        setDisplayedTasks(simplifiedTasks)
+
+        if (enteringIds.length > 0) {
+          // Use requestAnimationFrame to ensure DOM is updated before triggering animation
+          requestAnimationFrame(() => {
+            setEnteringTaskIds(new Set(enteringIds))
+            // Clear entering state after animation
+            setTimeout(() => {
+              setEnteringTaskIds(new Set())
+            }, 300)
+          })
+        }
+
+        previousTaskIdsRef.current = currentTaskIds
+      }, 300) // Match animation duration
+    } else if (enteringIds.length > 0) {
+      // New tasks added without removals
+      setDisplayedTasks(simplifiedTasks)
+      // Use requestAnimationFrame to ensure DOM is updated before triggering animation
+      requestAnimationFrame(() => {
+        setEnteringTaskIds(new Set(enteringIds))
+        setTimeout(() => {
+          setEnteringTaskIds(new Set())
+        }, 300)
+      })
+      previousTaskIdsRef.current = currentTaskIds
+    } else {
+      // Just reordering - update without special animation
+      setDisplayedTasks(simplifiedTasks)
+      previousTaskIdsRef.current = currentTaskIds
+    }
+  }, [simplifiedTasks])
 
   // Handle escape key to exit fullscreen
   useEffect(() => {
@@ -126,6 +200,49 @@ export function FullscreenTimer() {
           Pomodoro {(timer.sessionCount % timer.sessionsBeforeLongBreak) + 1} of{' '}
           {timer.sessionsBeforeLongBreak}
         </div>
+
+        {/* Simplified Tasks List */}
+        {(displayedTasks.length > 0 || simplifiedTasks.length > 0) && (
+          <div className="mt-12 w-full max-w-md">
+            <div className="text-sm text-muted-foreground mb-3 text-center">
+              Tasks ({simplifiedTasks.length}
+              {totalIncompleteCount > 5 && ` of ${totalIncompleteCount}`})
+            </div>
+            <div className="space-y-2">
+              {displayedTasks.map((task) => {
+                const isExiting = exitingTaskIds.has(task.id)
+                const isEntering = enteringTaskIds.has(task.id)
+                const isInCurrentList = simplifiedTasks.some(
+                  (t) => t.id === task.id,
+                )
+
+                return (
+                  <div
+                    key={task.id}
+                    className={cn(
+                      'flex items-center space-x-3 p-3 border rounded-md bg-card hover:bg-accent/50',
+                      isExiting
+                        ? 'task-exit pointer-events-none'
+                        : isEntering
+                          ? 'task-enter opacity-0'
+                          : 'opacity-100',
+                      !isInCurrentList && !isExiting && 'opacity-0',
+                    )}
+                  >
+                    <Checkbox
+                      onCheckedChange={() =>
+                        timer.toggleTaskCompletion(task.id)
+                      }
+                      checked={false}
+                      className="flex-shrink-0"
+                    />
+                    <span className="flex-1 text-sm">{task.text}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
