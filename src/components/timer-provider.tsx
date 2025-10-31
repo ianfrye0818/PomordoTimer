@@ -196,22 +196,62 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   }
 
   const updateTaskOrder = (items: Task[]) => {
-    setTasks(items)
-    saveTasks(items)
+    // Only allow reordering within active tasks
+    // Separate active and completed tasks
+    const activeTasks = items.filter((t) => !t.isCompleted)
+    const completedTasks = tasks.filter((t) => t.isCompleted)
+
+    // Update order for active tasks only
+    const reorderedActiveTasks = activeTasks.map((t, index) => ({
+      ...t,
+      order: index,
+    }))
+
+    // Keep completed tasks with their existing order, but update to come after active tasks
+    const reorderedCompletedTasks = completedTasks.map((t, index) => ({
+      ...t,
+      order: reorderedActiveTasks.length + index,
+    }))
+
+    const updatedTasks = [...reorderedActiveTasks, ...reorderedCompletedTasks]
+    setTasks(updatedTasks)
+    saveTasks(updatedTasks)
   }
 
   const addTask = (task: Task) => {
     const id = crypto.randomUUID()
-    const newTask = { ...task, id, order: tasks.length }
-    const newTasks = [...tasks, newTask]
+    const activeTasks = tasks.filter((t) => !t.isCompleted)
+    const completedTasks = tasks.filter((t) => t.isCompleted)
+    const newTask = { ...task, id, order: activeTasks.length }
+    // Add new task to active tasks, keep completed tasks at the end
+    const newTasks = [
+      ...activeTasks.map((t, index) => ({ ...t, order: index })),
+      newTask,
+      ...completedTasks.map((t, index) => ({
+        ...t,
+        order: activeTasks.length + 1 + index,
+      })),
+    ]
     setTasks(newTasks)
     saveTasks(newTasks)
   }
 
   const removeTask = (id: string) => {
-    const updatedTasks = tasks
-      .filter((t) => t.id !== id)
-      .map((t, index) => ({ ...t, order: index }))
+    const taskToRemove = tasks.find((t) => t.id === id)
+    if (!taskToRemove) return
+
+    // Separate active and completed tasks (excluding the one to remove)
+    const activeTasks = tasks.filter((t) => !t.isCompleted && t.id !== id)
+    const completedTasks = tasks.filter((t) => t.isCompleted && t.id !== id)
+
+    // Reorder active tasks, then completed tasks
+    const updatedTasks = [
+      ...activeTasks.map((t, index) => ({ ...t, order: index })),
+      ...completedTasks.map((t, index) => ({
+        ...t,
+        order: activeTasks.length + index,
+      })),
+    ]
     setTasks(updatedTasks)
     saveTasks(updatedTasks)
   }
@@ -271,9 +311,41 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   }
 
   const toggleTaskCompletion = (id: string) => {
-    const updatedTasks = tasks.map((task) =>
-      task.id === id ? { ...task, isCompleted: !task.isCompleted } : task,
-    )
+    const taskToToggle = tasks.find((t) => t.id === id)
+    if (!taskToToggle) return
+
+    const isCompleting = !taskToToggle.isCompleted
+
+    // Separate active and completed tasks
+    const activeTasks = tasks.filter((t) => !t.isCompleted && t.id !== id)
+    const completedTasks = tasks.filter((t) => t.isCompleted && t.id !== id)
+
+    let updatedTasks: Task[]
+
+    if (isCompleting) {
+      // Moving to completed: add to completed list at the end
+      const updatedTask = { ...taskToToggle, isCompleted: true }
+      updatedTasks = [
+        ...activeTasks.map((t, index) => ({ ...t, order: index })),
+        ...completedTasks.map((t, index) => ({
+          ...t,
+          order: activeTasks.length + index,
+        })),
+        { ...updatedTask, order: activeTasks.length + completedTasks.length },
+      ]
+    } else {
+      // Moving back to active: add to active list at the end
+      const updatedTask = { ...taskToToggle, isCompleted: false }
+      updatedTasks = [
+        ...activeTasks.map((t, index) => ({ ...t, order: index })),
+        { ...updatedTask, order: activeTasks.length },
+        ...completedTasks.map((t, index) => ({
+          ...t,
+          order: activeTasks.length + 1 + index,
+        })),
+      ]
+    }
+
     setTasks(updatedTasks)
     saveTasks(updatedTasks)
   }
