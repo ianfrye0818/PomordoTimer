@@ -1,6 +1,23 @@
 import { cn } from '@/lib/utils'
+import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { GripVertical } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card } from './card'
 
 interface ReorderableListProps<T extends { order: number }> {
@@ -18,6 +35,68 @@ interface ReorderableListProps<T extends { order: number }> {
   keyExtractor?: (item: T, index: number) => string | number
 }
 
+interface SortableItemProps<T extends { order: number }> {
+  item: T
+  index: number
+  renderItem?: (item: T, index: number) => React.ReactNode
+  itemClassName?: string
+  keyExtractor?: (item: T, index: number) => string | number
+}
+
+function SortableItem<T extends { order: number }>({
+  item,
+  index,
+  renderItem,
+  itemClassName,
+  keyExtractor = (_, index) => index,
+}: SortableItemProps<T>) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: keyExtractor(item, index),
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <Card
+        className={cn(
+          'p-4 transition-all duration-200',
+          isDragging && 'shadow-lg ring-2 ring-primary/20',
+          itemClassName,
+        )}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            {...attributes}
+            {...listeners}
+            className="text-muted-foreground hover:text-foreground transition-colors cursor-grab active:cursor-grabbing touch-none"
+          >
+            <GripVertical className="size-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            {renderItem ? (
+              renderItem(item, index)
+            ) : (
+              <div className="text-sm font-medium">{JSON.stringify(item)}</div>
+            )}
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
 export function ReorderableList<T extends { order: number }>({
   items,
   onReorder,
@@ -27,87 +106,50 @@ export function ReorderableList<T extends { order: number }>({
   keyExtractor = (_, index) => index,
 }: ReorderableListProps<T>) {
   const [sortedItems, setSortedItems] = useState<T[]>([])
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
-  const dragItemRef = useRef<number | null>(null)
-  const dragNodeRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const sorted = [...items].sort((a, b) => a.order - b.order)
     setSortedItems(sorted)
   }, [items])
 
-  const handleDragStart = (
-    e: React.DragEvent<HTMLDivElement>,
-    index: number,
-  ) => {
-    dragItemRef.current = index
-    dragNodeRef.current = e.currentTarget as HTMLDivElement
-    dragNodeRef.current.addEventListener('dragend', handleDragEnd)
-    setDraggedIndex(index)
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px of movement before starting drag
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
 
-    // Set drag image with some opacity
-    e.dataTransfer.effectAllowed = 'move'
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
 
-    // Small timeout to allow the drag ghost to be created
-    setTimeout(() => {
-      if (dragNodeRef.current) {
-        dragNodeRef.current.style.opacity = '0.5'
+    if (over && active.id !== over.id) {
+      // Find indices by comparing the keyExtractor result with active/over IDs
+      const oldIndex = sortedItems.findIndex(
+        (item, idx) => String(keyExtractor(item, idx)) === String(active.id),
+      )
+      const newIndex = sortedItems.findIndex(
+        (item, idx) => String(keyExtractor(item, idx)) === String(over.id),
+      )
+
+      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        const newItems = arrayMove(sortedItems, oldIndex, newIndex).map(
+          (item, index) => ({
+            ...item,
+            order: index,
+          }),
+        )
+
+        setSortedItems(newItems)
+
+        if (onReorder) {
+          onReorder(newItems)
+        }
       }
-    }, 0)
-  }
-
-  const handleDragEnter = (
-    e: React.DragEvent<HTMLDivElement>,
-    index: number,
-  ) => {
-    e.preventDefault()
-    if (dragItemRef.current === index) return
-    setDragOverIndex(index)
-  }
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-  }
-
-  const handleDragDrop = (
-    e: React.DragEvent<HTMLDivElement>,
-    dropIndex: number,
-  ) => {
-    e.preventDefault()
-
-    const dragIndex = dragItemRef.current
-    if (dragIndex === dropIndex || dragIndex === null) return
-
-    // Create a new array with the reordered items
-    const newItems = [...sortedItems]
-    const [draggedItem] = newItems.splice(dragIndex, 1)
-    newItems.splice(dropIndex, 0, draggedItem)
-
-    // Update order property for all items
-    const updatedItems = newItems.map((item, index) => ({
-      ...item,
-      order: index,
-    }))
-
-    setSortedItems(updatedItems)
-
-    if (onReorder) {
-      onReorder(updatedItems)
     }
-  }
-
-  const handleDragEnd = () => {
-    if (dragNodeRef.current) {
-      dragNodeRef.current.style.opacity = '1'
-      dragNodeRef.current.removeEventListener('dragend', handleDragEnd)
-    }
-
-    setDraggedIndex(null)
-    setDragOverIndex(null)
-    dragItemRef.current = null
-    dragNodeRef.current = null
   }
 
   if (sortedItems.length === 0) {
@@ -119,42 +161,28 @@ export function ReorderableList<T extends { order: number }>({
   }
 
   return (
-    <div className={cn('space-y-2', className)}>
-      {sortedItems.map((item, index) => (
-        <Card
-          key={keyExtractor(item, index)}
-          draggable
-          onDragStart={(e) => handleDragStart(e, index)}
-          onDragEnter={(e) => handleDragEnter(e, index)}
-          onDragOver={handleDragOver}
-          onDrop={(e) => handleDragDrop(e, index)}
-          className={cn(
-            'p-4 cursor-move transition-all duration-200',
-            draggedIndex === index
-              ? 'opacity-50 scale-95'
-              : 'opacity-100 scale-100',
-            dragOverIndex && draggedIndex !== index
-              ? 'border-primary border-2'
-              : '',
-            itemClassName,
-          )}
-        >
-          <div className="flex items-center gap-3">
-            <div className="text-muted-foreground hover:text-foreground transition-colors">
-              <GripVertical className="size-5" />
-            </div>
-            <div className="flex-1 min-w-0">
-              {renderItem ? (
-                renderItem(item, index)
-              ) : (
-                <div className="text-sm font-medium">
-                  {JSON.stringify(item)}
-                </div>
-              )}
-            </div>
-          </div>
-        </Card>
-      ))}
-    </div>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <SortableContext
+        items={sortedItems.map((item, index) => keyExtractor(item, index))}
+        strategy={verticalListSortingStrategy}
+      >
+        <div className={cn('space-y-2', className)}>
+          {sortedItems.map((item, index) => (
+            <SortableItem
+              key={keyExtractor(item, index)}
+              item={item}
+              index={index}
+              renderItem={renderItem}
+              itemClassName={itemClassName}
+              keyExtractor={keyExtractor}
+            />
+          ))}
+        </div>
+      </SortableContext>
+    </DndContext>
   )
 }
