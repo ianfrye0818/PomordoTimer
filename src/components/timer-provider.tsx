@@ -18,6 +18,7 @@ export type Task = {
   id: string
   text: string
   isCompleted: boolean
+  order: number
 }
 
 export type Settings = {
@@ -42,6 +43,7 @@ type TimerContextType = {
   addTask: (task: Task) => void
   removeTask: (id: string) => void
   toggleTaskCompletion: (id: string) => void
+  updateTaskOrder: (items: Task[]) => void
   saveSettings: (props: {
     settings?: Settings
     isAudioEnabled?: boolean
@@ -88,6 +90,7 @@ const TimerContext = createContext<TimerContextType>({
   removeTask: () => {},
   saveSettings: () => {},
   toggleTaskCompletion: () => {},
+  updateTaskOrder: () => {},
   tasks: [],
   workTime: 25,
   shortBreakTime: 5,
@@ -192,14 +195,23 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     setSessionCount(0)
   }
 
+  const updateTaskOrder = (items: Task[]) => {
+    setTasks(items)
+    saveTasks(items)
+  }
+
   const addTask = (task: Task) => {
-    const newTasks = [...tasks, task]
+    const id = crypto.randomUUID()
+    const newTask = { ...task, id, order: tasks.length }
+    const newTasks = [...tasks, newTask]
     setTasks(newTasks)
     saveTasks(newTasks)
   }
 
   const removeTask = (id: string) => {
-    const updatedTasks = tasks.filter((t) => t.id !== id)
+    const updatedTasks = tasks
+      .filter((t) => t.id !== id)
+      .map((t, index) => ({ ...t, order: index }))
     setTasks(updatedTasks)
     saveTasks(updatedTasks)
   }
@@ -382,6 +394,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         removeTask,
         saveSettings,
         toggleTaskCompletion,
+        updateTaskOrder,
         tasks,
         workTime,
         shortBreakTime,
