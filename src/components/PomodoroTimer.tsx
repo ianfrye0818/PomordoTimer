@@ -1,7 +1,7 @@
-import { TimerCard } from './TimerCard'
-import { TasksCard } from './TasksCard'
 import { FullscreenTimer } from './FullscreenTimer'
+import { TasksCard } from './TasksCard'
 import { useTimer } from './timer-provider'
+import { TimerCard } from './TimerCard'
 
 export default function PomodoroTimer() {
   const timer = useTimer()
