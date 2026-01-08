@@ -15,16 +15,16 @@ export function FullscreenTimer() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Get simplified tasks: only non-completed, limited to 5
+  // Get focused tasks: only tasks in focus session, non-completed, limited to 5
   const { simplifiedTasks, totalIncompleteCount } = useMemo(() => {
-    const incompleteTasks = timer.tasks
-      .filter((task) => !task.isCompleted)
+    const focusedIncompleteTasks = timer.tasks
+      .filter((task) => timer.focusSessionTasks.includes(task.id) && !task.isCompleted)
       .sort((a, b) => a.order - b.order)
     return {
-      simplifiedTasks: incompleteTasks.slice(0, 5),
-      totalIncompleteCount: incompleteTasks.length,
+      simplifiedTasks: focusedIncompleteTasks.slice(0, 5),
+      totalIncompleteCount: focusedIncompleteTasks.length,
     }
-  }, [timer.tasks])
+  }, [timer.tasks, timer.focusSessionTasks])
 
   // Track tasks for animation purposes
   const [displayedTasks, setDisplayedTasks] = useState<Task[]>(simplifiedTasks)
@@ -201,11 +201,11 @@ export function FullscreenTimer() {
           {timer.sessionsBeforeLongBreak}
         </div>
 
-        {/* Simplified Tasks List */}
+        {/* Focused Tasks List */}
         {(displayedTasks.length > 0 || simplifiedTasks.length > 0) && (
           <div className="mt-12 w-full max-w-md">
             <div className="text-sm text-muted-foreground mb-3 text-center">
-              Tasks ({simplifiedTasks.length}
+              Focus Tasks ({simplifiedTasks.length}
               {totalIncompleteCount > 5 && ` of ${totalIncompleteCount}`})
             </div>
             <div className="space-y-2">

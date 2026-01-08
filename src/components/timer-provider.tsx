@@ -58,6 +58,10 @@ type TimerContextType = {
   isAudioEnabled: boolean
   timerRef: React.RefObject<NodeJS.Timeout | null>
   audioRef: React.RefObject<HTMLAudioElement | null>
+  focusSessionTasks: string[]
+  addTaskToFocus: (taskId: string) => void
+  removeTaskFromFocus: (taskId: string) => void
+  clearFocusSession: () => void
 }
 
 export const TIME_PRESETS = [
@@ -101,6 +105,10 @@ const TimerContext = createContext<TimerContextType>({
   audioRef: { current: null },
   errors: [],
   sessionCount: 0,
+  focusSessionTasks: [],
+  addTaskToFocus: () => {},
+  removeTaskFromFocus: () => {},
+  clearFocusSession: () => {},
 })
 
 export function TimerProvider({ children }: { children: React.ReactNode }) {
@@ -116,6 +124,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const [longBreakTime, setLongBreakTime] = useState(15)
   const [sessionsBeforeLongBreak, setSessionsBeforeLongBreak] = useState(4)
   const [isAudioEnabled, setIsAudioEnabled] = useState(true)
+  const [focusSessionTasks, setFocusSessionTasks] = useState<string[]>([])
 
   const audioRef = useRef<HTMLAudioElement>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
@@ -281,6 +290,37 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const saveFocusSessionTasks = (taskIds: string[]) => {
+    localStorage.setItem('pomodoro-focus-session', JSON.stringify(taskIds))
+  }
+
+  const loadFocusSessionTasks = () => {
+    const storedFocusSession = localStorage.getItem('pomodoro-focus-session')
+    if (storedFocusSession) {
+      setFocusSessionTasks(JSON.parse(storedFocusSession))
+    }
+  }
+
+  const addTaskToFocus = (taskId: string) => {
+    if (focusSessionTasks.includes(taskId)) {
+      return // Task already in focus session
+    }
+    const updatedFocusSession = [...focusSessionTasks, taskId]
+    setFocusSessionTasks(updatedFocusSession)
+    saveFocusSessionTasks(updatedFocusSession)
+  }
+
+  const removeTaskFromFocus = (taskId: string) => {
+    const updatedFocusSession = focusSessionTasks.filter((id) => id !== taskId)
+    setFocusSessionTasks(updatedFocusSession)
+    saveFocusSessionTasks(updatedFocusSession)
+  }
+
+  const clearFocusSession = () => {
+    setFocusSessionTasks([])
+    saveFocusSessionTasks([])
+  }
+
   const saveSettings = (props: {
     settings?: Settings
     isAudioEnabled?: boolean
@@ -398,6 +438,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     loadSettings('all')
     loadTasks()
+    loadFocusSessionTasks()
   }, [])
 
   // Update time when settings are loaded to set correct initial time
@@ -481,6 +522,10 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         timerRef,
         errors,
         sessionCount,
+        focusSessionTasks,
+        addTaskToFocus,
+        removeTaskFromFocus,
+        clearFocusSession,
       }}
     >
       {children}
