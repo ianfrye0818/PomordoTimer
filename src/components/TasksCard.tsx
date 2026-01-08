@@ -1,4 +1,5 @@
-import { Plus, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Plus, Target, X } from 'lucide-react'
 import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTimer, type Task } from './timer-provider'
@@ -17,6 +18,9 @@ export function TasksCard() {
     updateTaskOrder,
     tasks,
     errors,
+    focusSessionTasks,
+    addTaskToFocus,
+    removeTaskFromFocus,
   } = useTimer()
 
   const form = useForm<Task>({
@@ -79,6 +83,7 @@ export function TasksCard() {
                     items={activeTasks}
                     keyExtractor={(task) => task.id}
                     renderItem={(task) => {
+                      const isInFocus = focusSessionTasks.includes(task.id)
                       return (
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2 flex-1 min-w-0">
@@ -92,7 +97,24 @@ export function TasksCard() {
                               {task.text}
                             </span>
                           </div>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-1">
+                            <Button
+                              variant={isInFocus ? 'default' : 'outline'}
+                              size="sm"
+                              className={cn(
+                                'h-7 text-xs',
+                                isInFocus &&
+                                  'bg-blue-600 hover:bg-blue-700 text-white',
+                              )}
+                              onClick={() =>
+                                isInFocus
+                                  ? removeTaskFromFocus(task.id)
+                                  : addTaskToFocus(task.id)
+                              }
+                            >
+                              <Target className="h-3 w-3 mr-1" />
+                              {isInFocus ? 'In Focus' : 'Add to Focus'}
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"

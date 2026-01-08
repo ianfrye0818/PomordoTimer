@@ -1,7 +1,6 @@
 import { FullscreenTimer } from './FullscreenTimer'
-import { TasksCard } from './TasksCard'
 import { useTimer } from './timer-provider'
-import { TimerCard } from './TimerCard'
+import { MainTabs } from './MainTabs'
 
 export default function PomodoroTimer() {
   const timer = useTimer()
@@ -13,9 +12,7 @@ export default function PomodoroTimer() {
   return (
     <>
       <div className="grid gap-6">
-        <TimerCard />
-
-        <TasksCard />
+        <MainTabs />
       </div>
     </>
   )
