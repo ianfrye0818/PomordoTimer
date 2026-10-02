@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Package manager is **pnpm**.
 
 ```bash
-pnpm dev          # vinxi dev server (binds 0.0.0.0)
+pnpm dev          # vite dev server (binds 0.0.0.0)
 pnpm build        # production build → .output/
 pnpm start:local  # run the built server with .env.production
 npx tsc --noEmit  # type-check (no script defined)
@@ -22,7 +22,7 @@ Notes:
 
 ## Architecture
 
-TanStack Start app (React 19, SSR via vinxi, `node-server` preset) configured in `app.config.ts` with `appDirectory: 'src'`. Path alias `@/*` → `src/*`. Styling is Tailwind v4 (via `@tailwindcss/vite`, theme in `src/styles.css`) with shadcn/ui "new-york" components in `src/components/ui/`.
+TanStack Start app (React 19, SSR, Vite 8 + Nitro v3 with the `node-server` preset) configured in `vite.config.ts` (`tanstackStart({ srcDirectory: 'src' })`, `nitro()`, `@vitejs/plugin-react`, `@tailwindcss/vite`). There are no custom client/server entry files — Start's defaults are used, and `src/router.tsx` exports `getRouter()`. Path alias `@/*` → `src/*`. Styling is Tailwind v4 (via `@tailwindcss/vite`, theme in `src/styles.css`) with shadcn/ui "new-york" components in `src/components/ui/`.
 
 - **Routing**: file-based in `src/routes/`. `src/routeTree.gen.ts` is auto-generated and gitignored — don't edit it. `__root.tsx` renders the HTML document shell; the only real page is `routes/index.tsx`.
 - **State**: all app state lives in a single React context, `TimerProvider` in `src/components/timer-provider.tsx`, consumed via `useTimer()`. It owns the timer countdown, mode transitions (work → short/long break based on `sessionsBeforeLongBreak`), settings, tasks, focus-session task IDs, and the `<audio>` element. Zustand is a dependency but is not used.

@@ -4,7 +4,6 @@ dist
 dist-ssr
 *.local
 .output
-.vinxi
 .env.production
 .env.local
 .env.development
@@ -15,3 +14,5 @@ package-lock.yaml
 .vscode
 .jetbrains
 notes.md
+.nitro
+.tanstack
