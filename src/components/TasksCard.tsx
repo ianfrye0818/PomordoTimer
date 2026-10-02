@@ -61,11 +61,7 @@ export function TasksCard() {
             })}
           >
             <div className="flex-1">
-              <FormInputItem
-                control={form.control}
-                name="text"
-                placeholder="Add a new task..."
-              />
+              <FormInputItem name="text" placeholder="Add a new task..." />
             </div>
             <Button type="submit" size={'icon'}>
               <Plus className="size-2" />

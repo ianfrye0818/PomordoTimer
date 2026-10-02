@@ -1,20 +1,20 @@
-import { useState } from 'react'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card'
-import { Button } from './ui/button'
+import { cn } from '@/lib/utils'
 import {
+  Maximize2,
   Pause,
   Play,
   RotateCcw,
   Settings as SettingsIcon,
   Volume2Icon,
   VolumeOffIcon,
-  Maximize2,
 } from 'lucide-react'
-import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
-import { cn } from '@/lib/utils'
+import { useState } from 'react'
 import { SettingsForm } from './SettingsForm'
 import { useTimer, type Mode } from './timer-provider'
+import { Button } from './ui/button'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card'
 import FormDialog from './ui/FormDialog'
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 
 export function TimerCard() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)

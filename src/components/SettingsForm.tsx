@@ -1,6 +1,14 @@
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { useTheme } from './theme-provider'
+import { TIME_PRESETS, useTimer } from './timer-provider'
 import { Button } from './ui/button'
+import ErrorMessage from './ui/ErrorMessage'
+import { Form } from './ui/form'
+import { FormInputItem } from './ui/FormInputItem'
+import { Input } from './ui/input'
 import { Label } from './ui/label'
-import { Switch } from './ui/switch'
 import {
   Select,
   SelectContent,
@@ -8,15 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
-import { TIME_PRESETS, useTimer } from './timer-provider'
-import { useForm } from 'react-hook-form'
-import { FormInputItem } from './ui/FormInputItem'
-import { z } from 'zod'
-import { Form } from './ui/form'
-import { useTheme } from './theme-provider'
-import { Input } from './ui/input'
-import ErrorMessage from './ui/ErrorMessage'
-import { useState } from 'react'
+import { Switch } from './ui/switch'
 
 const CUSTOM_VALUE = 'custom'
 
@@ -147,7 +147,6 @@ export function SettingsForm({ setOpen }: { setOpen: () => void }) {
             How many sessions before a long break?
           </Label>
           <FormInputItem<typeof schema>
-            control={form.control}
             name="sessionsBeforeLongBreak"
             type="number"
           />
