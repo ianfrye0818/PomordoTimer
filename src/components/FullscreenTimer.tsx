@@ -132,7 +132,7 @@ export function FullscreenTimer() {
                 value="work"
                 className={
                   timer.mode === 'work'
-                    ? 'bg-green-600 data-[state=active]:bg-green-500'
+                    ? 'bg-green-600 data-active:bg-green-500'
                     : ''
                 }
               >
@@ -142,7 +142,7 @@ export function FullscreenTimer() {
                 value="shortBreak"
                 className={
                   timer.mode === 'shortBreak'
-                    ? 'bg-rose-600 data-[state=active]:bg-rose-500'
+                    ? 'bg-rose-600 data-active:bg-rose-500'
                     : ''
                 }
               >
@@ -152,7 +152,7 @@ export function FullscreenTimer() {
                 value="longBreak"
                 className={
                   timer.mode === 'longBreak'
-                    ? 'bg-pink-600 data-[state=active]:bg-pink-500'
+                    ? 'bg-pink-600 data-active:bg-pink-500'
                     : ''
                 }
               >
