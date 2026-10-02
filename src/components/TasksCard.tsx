@@ -1,8 +1,10 @@
+import { formResolver } from '@/lib/formResolver'
+import { taskSchema, type Task } from '@/lib/taskSchema'
 import { cn } from '@/lib/utils'
 import { Plus, Target, X } from 'lucide-react'
 import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
-import { useTimer, type Task } from './timer-provider'
+import { useTimer } from './timer-provider'
 import { FormInputItem } from './ui/FormInputItem'
 import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
@@ -27,7 +29,10 @@ export function TasksCard() {
     defaultValues: {
       text: '',
       isCompleted: false,
+      id: crypto.randomUUID(),
+      order: 0,
     },
+    resolver: formResolver(taskSchema),
   })
 
   // Separate active and completed tasks - memoized to prevent infinite loops
@@ -56,11 +61,7 @@ export function TasksCard() {
             })}
           >
             <div className="flex-1">
-              <FormInputItem
-                control={form.control}
-                name="text"
-                placeholder="Add a new task..."
-              />
+              <FormInputItem name="text" placeholder="Add a new task..." />
             </div>
             <Button type="submit" size={'icon'}>
               <Plus className="size-2" />
@@ -68,7 +69,7 @@ export function TasksCard() {
           </form>
         </Form>
 
-        <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+        <div className="space-y-4 max-h-100 overflow-y-auto custom-scrollbar">
           {tasks.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No tasks yet. Add some tasks to work on during your Pomodoro

@@ -1,7 +1,8 @@
+import { type Task } from '@/lib/taskSchema'
 import { cn } from '@/lib/utils'
 import { Pause, Play, RotateCcw, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useTimer, type Mode, type Task } from './timer-provider'
+import { useTimer, type Mode } from './timer-provider'
 import { Button } from './ui/button'
 import { Checkbox } from './ui/checkbox'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
@@ -18,7 +19,10 @@ export function FullscreenTimer() {
   // Get focused tasks: only tasks in focus session, non-completed, limited to 5
   const { simplifiedTasks, totalIncompleteCount } = useMemo(() => {
     const focusedIncompleteTasks = timer.tasks
-      .filter((task) => timer.focusSessionTasks.includes(task.id) && !task.isCompleted)
+      .filter(
+        (task) =>
+          timer.focusSessionTasks.includes(task.id) && !task.isCompleted,
+      )
       .sort((a, b) => a.order - b.order)
     return {
       simplifiedTasks: focusedIncompleteTasks.slice(0, 5),
@@ -101,9 +105,9 @@ export function FullscreenTimer() {
   }, [timer])
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col">
+    <div className="fixed inset-0 z-50 bg-background flex flex-col overflow-y-auto">
       {/* Header with close button */}
-      <div className="flex justify-end p-4">
+      <div className="flex justify-end p-4 short:absolute short:top-0 short:right-0">
         <Button
           variant="ghost"
           size="icon"
@@ -114,96 +118,99 @@ export function FullscreenTimer() {
         </Button>
       </div>
 
-      {/* Main timer content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4">
-        {/* Mode tabs */}
-        <Tabs
-          defaultValue="work"
-          value={timer.mode}
-          onValueChange={(value) => timer.setMode(value as Mode)}
-          className="w-full max-w-md mb-8"
-        >
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger
-              value="work"
-              className={
-                timer.mode === 'work'
-                  ? 'bg-green-600 data-[state=active]:bg-green-500'
-                  : ''
-              }
-            >
-              Work
-            </TabsTrigger>
-            <TabsTrigger
-              value="shortBreak"
-              className={
-                timer.mode === 'shortBreak'
-                  ? 'bg-rose-600 data-[state=active]:bg-rose-500'
-                  : ''
-              }
-            >
-              Short Break
-            </TabsTrigger>
-            <TabsTrigger
-              value="longBreak"
-              className={
-                timer.mode === 'longBreak'
-                  ? 'bg-pink-600 data-[state=active]:bg-pink-500'
-                  : ''
-              }
-            >
-              Long Break
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        {/* Timer display */}
-        <div
-          className={cn(
-            'text-8xl font-bold tabular-nums mb-12 p-12 rounded-2xl shadow-lg',
-            timer.mode === 'work' ? 'text-green-600' : 'text-red-600',
-            'bg-card border',
-          )}
-        >
-          {formatTime(timer.time)}
-        </div>
-
-        {/* Controls */}
-        <div className="flex space-x-6">
-          <Button
-            onClick={timer.isRunning ? timer.pauseTimer : timer.startTimer}
-            size="lg"
-            className="px-8 py-3 text-lg"
+      {/* Main timer content: stacked normally, side by side on short screens */}
+      <div className="flex-1 flex flex-col items-center justify-center-safe px-4 pb-8 short:flex-row short:items-center-safe short:gap-12 short:py-8">
+        <div className="flex w-full max-w-md flex-col items-center">
+          {/* Mode tabs */}
+          <Tabs
+            defaultValue="work"
+            value={timer.mode}
+            onValueChange={(value) => timer.setMode(value as Mode)}
+            className="w-full max-w-md mb-8 short:mb-4"
           >
-            {timer.isRunning ? (
-              <Pause className="mr-3 h-6 w-6" />
-            ) : (
-              <Play className="mr-3 h-6 w-6" />
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger
+                value="work"
+                className={
+                  timer.mode === 'work'
+                    ? 'bg-green-600 data-active:bg-green-500'
+                    : ''
+                }
+              >
+                Work
+              </TabsTrigger>
+              <TabsTrigger
+                value="shortBreak"
+                className={
+                  timer.mode === 'shortBreak'
+                    ? 'bg-rose-600 data-active:bg-rose-500'
+                    : ''
+                }
+              >
+                Short Break
+              </TabsTrigger>
+              <TabsTrigger
+                value="longBreak"
+                className={
+                  timer.mode === 'longBreak'
+                    ? 'bg-pink-600 data-active:bg-pink-500'
+                    : ''
+                }
+              >
+                Long Break
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {/* Timer display */}
+          <div
+            className={cn(
+              'text-8xl font-bold tabular-nums mb-12 p-12 rounded-2xl shadow-lg short:text-7xl short:mb-6 short:p-8',
+              timer.mode === 'work' ? 'text-green-600' : 'text-red-600',
+              'bg-card border',
             )}
-            {timer.isRunning ? 'Pause' : 'Start'}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={timer.resetTimer}
-            size="lg"
-            className="px-8 py-3 text-lg"
           >
-            <RotateCcw className="mr-3 h-6 w-6" />
-            Reset
-          </Button>
-        </div>
+            {formatTime(timer.time)}
+          </div>
 
-        {/* Session info */}
-        <div className="mt-8 text-lg text-muted-foreground">
-          Session{' '}
-          {Math.floor(timer.sessionCount / timer.sessionsBeforeLongBreak) + 1},
-          Pomodoro {(timer.sessionCount % timer.sessionsBeforeLongBreak) + 1} of{' '}
-          {timer.sessionsBeforeLongBreak}
+          {/* Controls */}
+          <div className="flex space-x-6">
+            <Button
+              onClick={timer.isRunning ? timer.pauseTimer : timer.startTimer}
+              size="lg"
+              className="px-8 py-3 text-lg"
+            >
+              {timer.isRunning ? (
+                <Pause className="mr-3 h-6 w-6" />
+              ) : (
+                <Play className="mr-3 h-6 w-6" />
+              )}
+              {timer.isRunning ? 'Pause' : 'Start'}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={timer.resetTimer}
+              size="lg"
+              className="px-8 py-3 text-lg"
+            >
+              <RotateCcw className="mr-3 h-6 w-6" />
+              Reset
+            </Button>
+          </div>
+
+          {/* Session info */}
+          <div className="mt-8 text-lg text-muted-foreground short:mt-4">
+            Session{' '}
+            {Math.floor(timer.sessionCount / timer.sessionsBeforeLongBreak) + 1}
+            , Pomodoro{' '}
+            {(timer.sessionCount % timer.sessionsBeforeLongBreak) + 1} of{' '}
+            {timer.sessionsBeforeLongBreak}
+          </div>
         </div>
 
         {/* Focused Tasks List */}
         {(displayedTasks.length > 0 || simplifiedTasks.length > 0) && (
-          <div className="mt-12 w-full max-w-md">
+          <div className="mt-12 w-full max-w-md short:mt-0">
             <div className="text-sm text-muted-foreground mb-3 text-center">
               Focus Tasks ({simplifiedTasks.length}
               {totalIncompleteCount > 5 && ` of ${totalIncompleteCount}`})

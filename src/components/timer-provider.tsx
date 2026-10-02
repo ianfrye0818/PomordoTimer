@@ -1,3 +1,4 @@
+import type { Task } from '@/lib/taskSchema'
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 
 export type Mode = 'work' | 'shortBreak' | 'longBreak'
@@ -14,18 +15,12 @@ export class TimerError extends Error {
   }
 }
 
-export type Task = {
-  id: string
-  text: string
-  isCompleted: boolean
-  order: number
-}
-
 export type Settings = {
   workTime: number
   shortBreakTime: number
   longBreakTime: number
   sessionsBeforeLongBreak: number
+  runContinuously?: boolean
 }
 
 type TimerContextType = {
@@ -55,6 +50,7 @@ type TimerContextType = {
   shortBreakTime: number
   longBreakTime: number
   sessionsBeforeLongBreak: number
+  runContinuously: boolean
   isAudioEnabled: boolean
   timerRef: React.RefObject<NodeJS.Timeout | null>
   audioRef: React.RefObject<HTMLAudioElement | null>
@@ -65,16 +61,10 @@ type TimerContextType = {
 }
 
 export const TIME_PRESETS = [
-  { label: '10 seconds', value: 0.16666666666666666 },
   { label: '30 seconds', value: 0.5 },
   { label: '1 minute', value: 1 },
   { label: '5 minutes', value: 5 },
-  { label: '10 minutes', value: 10 },
-  { label: '15 minutes', value: 15 },
-  { label: '20 minutes', value: 20 },
-  { label: '25 minutes', value: 25 },
   { label: '30 minutes', value: 30 },
-  { label: '45 minutes', value: 45 },
   { label: '1 hour', value: 60 },
 ] as const
 
@@ -100,6 +90,7 @@ const TimerContext = createContext<TimerContextType>({
   shortBreakTime: 5,
   longBreakTime: 15,
   sessionsBeforeLongBreak: 4,
+  runContinuously: false,
   isAudioEnabled: true,
   timerRef: { current: null },
   audioRef: { current: null },
@@ -123,6 +114,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const [shortBreakTime, setShortBreakTime] = useState(5)
   const [longBreakTime, setLongBreakTime] = useState(15)
   const [sessionsBeforeLongBreak, setSessionsBeforeLongBreak] = useState(4)
+  const [runContinuously, setRunContinuously] = useState(false)
   const [isAudioEnabled, setIsAudioEnabled] = useState(true)
   const [focusSessionTasks, setFocusSessionTasks] = useState<string[]>([])
 
@@ -200,7 +192,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       setIsRunning(false)
     }
     setMode('work')
-    setTime(workTime * 60)
+    setTime(Math.round(workTime * 60))
     setSessionCount(0)
   }
 
@@ -228,10 +220,9 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   }
 
   const addTask = (task: Task) => {
-    const id = crypto.randomUUID()
     const activeTasks = tasks.filter((t) => !t.isCompleted)
     const completedTasks = tasks.filter((t) => t.isCompleted)
-    const newTask = { ...task, id, order: activeTasks.length }
+    const newTask = { ...task, order: activeTasks.length }
     // Add new task to active tasks, keep completed tasks at the end
     const newTasks = [
       ...activeTasks.map((t, index) => ({ ...t, order: index })),
@@ -272,10 +263,10 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     setMode(newMode)
     setTime(
       newMode === 'work'
-        ? workTime * 60
+        ? Math.round(workTime * 60)
         : newMode === 'shortBreak'
-          ? shortBreakTime * 60
-          : longBreakTime * 60,
+          ? Math.round(shortBreakTime * 60)
+          : Math.round(longBreakTime * 60),
     )
   }
 
@@ -330,14 +321,15 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       setShortBreakTime(props.settings.shortBreakTime)
       setLongBreakTime(props.settings.longBreakTime)
       setSessionsBeforeLongBreak(props.settings.sessionsBeforeLongBreak)
+      setRunContinuously(props.settings.runContinuously ?? false)
       localStorage.setItem('pomodoro-settings', JSON.stringify(props.settings))
 
       if (mode === 'work') {
-        setTime(props.settings.workTime * 60)
+        setTime(Math.round(props.settings.workTime * 60))
       } else if (mode === 'shortBreak') {
-        setTime(props.settings.shortBreakTime * 60)
+        setTime(Math.round(props.settings.shortBreakTime * 60))
       } else if (mode === 'longBreak') {
-        setTime(props.settings.longBreakTime * 60)
+        setTime(Math.round(props.settings.longBreakTime * 60))
       }
     }
 
@@ -399,6 +391,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         setShortBreakTime(settings.shortBreakTime)
         setLongBreakTime(settings.longBreakTime)
         setSessionsBeforeLongBreak(settings.sessionsBeforeLongBreak)
+        setRunContinuously(settings.runContinuously ?? false)
       }
     }
     const loadIsAudioEnabled = () => {
@@ -445,10 +438,10 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setTime(
       mode === 'work'
-        ? workTime * 60
+        ? Math.round(workTime * 60)
         : mode === 'shortBreak'
-          ? shortBreakTime * 60
-          : longBreakTime * 60,
+          ? Math.round(shortBreakTime * 60)
+          : Math.round(longBreakTime * 60),
     )
   }, [workTime, shortBreakTime, longBreakTime, mode])
 
@@ -477,6 +470,12 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
               : 'work'
 
           handleModeChange(nextMode)
+
+          // In continuous mode, roll straight into the next phase until the
+          // long break finishes, which completes the full cycle
+          if (runContinuously && mode !== 'longBreak') {
+            setIsRunning(true)
+          }
         }
       }, 1000)
 
@@ -491,6 +490,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     longBreakTime,
     sessionCount,
     sessionsBeforeLongBreak,
+    runContinuously,
   ])
 
   return (
@@ -513,6 +513,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         shortBreakTime,
         longBreakTime,
         sessionsBeforeLongBreak,
+        runContinuously,
         isAudioEnabled,
         pauseTimer,
         resetTimer,

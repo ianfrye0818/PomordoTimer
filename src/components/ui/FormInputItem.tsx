@@ -1,95 +1,97 @@
-import { type Control, type FieldPath } from 'react-hook-form'
+import ErrorMessage from '@/components/ui/ErrorMessage'
+import { cn } from 'cn'
+import { EyeIcon, EyeOffIcon } from 'lucide-react'
+import { type InputHTMLAttributes, useState } from 'react'
+import { type FieldPath, useFormContext } from 'react-hook-form'
 import { z } from 'zod'
-import { cn } from '@/lib/utils'
-import type { HTMLInputTypeAttribute } from 'react'
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-} from './form'
-import ErrorMessage from './ErrorMessage'
-import { Input } from './input'
+import { Button } from '../ui/button'
+import { FormField } from '../ui/form'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
 
-export interface FormInputItemProps<T extends z.ZodTypeAny>
-  extends React.InputHTMLAttributes<HTMLInputElement> {
-  control: Control<z.infer<T>, any>
+interface Props<T extends z.ZodType<any>>
+  extends InputHTMLAttributes<HTMLInputElement> {
   name: FieldPath<z.infer<T>>
   label?: string
-  borderLabel?: string
-  labelClassName?: string
-  type?: HTMLInputTypeAttribute
-  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void
-  iconClassName?: string
-  buttonClassName?: string
-  showPassword?: boolean
-  setShowPassword?: (showPassword: boolean) => void
-  formDescription?: string
+  errorProps?: React.HTMLAttributes<HTMLDivElement>
+  containerProps?: React.HTMLAttributes<HTMLDivElement>
 }
 
-export function FormInputItem<T extends z.ZodTypeAny>({
-  control,
-  name,
+export function FormInputItem<T extends z.ZodType<any>>({
   label,
-  placeholder,
-  formDescription,
-  className,
-  labelClassName,
-  type,
-  iconClassName,
-  buttonClassName,
-  showPassword,
-  setShowPassword,
+  errorProps,
+  containerProps,
+  name,
   ...props
-}: FormInputItemProps<T>) {
-  const shouldShowPassword = () => {
-    if (type === 'password' && showPassword) {
-      return 'text'
-    }
-    return type
-  }
+}: Props<T>) {
+  const [showPassword, setShowPassword] = useState(false)
+  const form = useFormContext()
   return (
     <FormField
-      control={control}
+      control={form.control}
       name={name}
-      render={({ field, fieldState }) => {
-        const isError = !!fieldState.error
-        return (
-          <FormItem className="flex flex-col gap-2">
-            {label && (
-              <FormLabel className={cn(labelClassName)}>
-                {label}{' '}
-                {props.required && <span className="text-red-500">*</span>}
-              </FormLabel>
-            )}
-            <FormControl>
-              <div className="relative">
-                <Input
-                  placeholder={placeholder}
-                  className={cn(
-                    'w-full',
-                    isError && 'border-red-500',
-                    className,
-                  )}
-                  type={shouldShowPassword()}
-                  {...field}
-                  {...props}
+      render={({ field }) => (
+        <div className={cn('flex flex-col gap-2', containerProps?.className)}>
+          {label && (
+            <Label>
+              {label}{' '}
+              {props.required && <span className="text-red-500">*</span>}
+            </Label>
+          )}
+          <div className="relative">
+            <Input
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              {...props}
+              type={
+                props.type === 'password'
+                  ? showPassword
+                    ? 'text'
+                    : 'password'
+                  : props.type
+              }
+              className={`${props.className || ''} ${props.type === 'password' ? 'pr-12' : ''}`}
+            />
+            {props.type === 'password' && (
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 z-10">
+                <ShowPasswordButton
+                  showPassword={showPassword}
+                  setShowPassword={setShowPassword}
                 />
               </div>
-            </FormControl>
-            {formDescription && (
-              <FormDescription className="text-sm text-gray-500">
-                {formDescription}
-              </FormDescription>
             )}
-            <ErrorMessage
-              message={fieldState.error?.message}
-              className="text-left"
-            />
-          </FormItem>
-        )
-      }}
+          </div>
+          <ErrorMessage
+            message={form.formState.errors[name]?.message as string | undefined}
+            {...errorProps}
+          />
+        </div>
+      )}
     />
+  )
+}
+
+function ShowPasswordButton({
+  showPassword,
+  setShowPassword,
+}: {
+  showPassword: boolean
+  setShowPassword: (showPassword: boolean) => void
+}) {
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      type="button"
+      className="h-8 w-8 p-0"
+      onClick={() => setShowPassword(!showPassword)}
+    >
+      {showPassword ? (
+        <EyeOffIcon className="icon" />
+      ) : (
+        <EyeIcon className="icon" />
+      )}
+    </Button>
   )
 }

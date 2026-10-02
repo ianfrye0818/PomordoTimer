@@ -1,20 +1,20 @@
-import { useState } from 'react'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card'
-import { Button } from './ui/button'
+import { cn } from '@/lib/utils'
 import {
+  Maximize2,
   Pause,
   Play,
   RotateCcw,
   Settings as SettingsIcon,
   Volume2Icon,
   VolumeOffIcon,
-  Maximize2,
 } from 'lucide-react'
-import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
-import { cn } from '@/lib/utils'
+import { useState } from 'react'
 import { SettingsForm } from './SettingsForm'
 import { useTimer, type Mode } from './timer-provider'
+import { Button } from './ui/button'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card'
 import FormDialog from './ui/FormDialog'
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 
 export function TimerCard() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -79,7 +79,7 @@ export function TimerCard() {
                 value="work"
                 className={
                   timer.mode === 'work'
-                    ? 'bg-green-600 data-[state=active]:bg-green-500'
+                    ? 'bg-green-600 data-active:bg-green-500'
                     : ''
                 }
               >
@@ -89,7 +89,7 @@ export function TimerCard() {
                 value="shortBreak"
                 className={
                   timer.mode === 'shortBreak'
-                    ? 'bg-rose-600  data-[state=active]:bg-rose-500'
+                    ? 'bg-rose-600  data-active:bg-rose-500'
                     : ''
                 }
               >
@@ -99,7 +99,7 @@ export function TimerCard() {
                 value="longBreak"
                 className={
                   timer.mode === 'longBreak'
-                    ? 'bg-pink-600 data-[state=active]:bg-pink-500'
+                    ? 'bg-pink-600 data-active:bg-pink-500'
                     : ''
                 }
               >
@@ -108,10 +108,10 @@ export function TimerCard() {
             </TabsList>
           </Tabs>
 
-          <div className="mt-8 flex flex-col items-center">
+          <div className="mt-8 flex flex-col items-center short:mt-4">
             <div
               className={cn(
-                'text-6xl font-bold tabular-nums mb-8 p-8 rounded-xl shadow-md',
+                'text-6xl font-bold tabular-nums mb-8 p-8 rounded-xl shadow-md short:mb-4 short:p-6',
                 timer.mode === 'work' ? 'text-green-600' : 'text-red-600',
                 'bg-background',
               )}
