@@ -22,6 +22,26 @@ const CUSTOM_VALUE = 'custom'
 
 type TimeUnit = 'minutes' | 'seconds'
 
+// Base UI's SelectValue renders the raw value unless the Root is given labels
+const PRESET_ITEMS = [
+  ...TIME_PRESETS.map((preset) => ({
+    label: preset.label,
+    value: preset.value.toString(),
+  })),
+  { label: 'Custom...', value: CUSTOM_VALUE },
+]
+
+const THEME_ITEMS = [
+  { label: 'Light', value: 'light' },
+  { label: 'Dark', value: 'dark' },
+  { label: 'System', value: 'system' },
+]
+
+const UNIT_ITEMS = [
+  { label: 'Minutes', value: 'minutes' },
+  { label: 'Seconds', value: 'seconds' },
+]
+
 const CUSTOM_LIMITS: Record<TimeUnit, { min: number; max: number }> = {
   minutes: { min: 1, max: 180 },
   seconds: { min: 1, max: 3600 },
@@ -154,6 +174,7 @@ export function SettingsForm({ setOpen }: { setOpen: () => void }) {
         <div className="grid gap-2">
           <Label htmlFor="theme">Theme</Label>
           <Select
+            items={THEME_ITEMS}
             value={form.watch('theme')}
             onValueChange={(value) =>
               form.setValue('theme', value as 'light' | 'dark' | 'system')
@@ -278,8 +299,11 @@ function DurationField({
     <div className="grid gap-2">
       <Label htmlFor={id}>{label}</Label>
       <Select
+        items={PRESET_ITEMS}
         value={isCustom ? CUSTOM_VALUE : value.toString()}
-        onValueChange={handleSelect}
+        onValueChange={(selected) =>
+          selected !== null && handleSelect(selected)
+        }
       >
         <SelectTrigger id={id} className="w-full">
           <SelectValue placeholder="Select preset" />
@@ -309,6 +333,7 @@ function DurationField({
               className={customError ? 'border-red-500' : undefined}
             />
             <Select
+              items={UNIT_ITEMS}
               value={unit}
               onValueChange={(next) => handleUnitChange(next as TimeUnit)}
             >
