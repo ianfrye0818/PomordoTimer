@@ -2,6 +2,8 @@
 @import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
+/* Short-but-wide viewports (e.g. window docked to half the screen): lay out side by side */
+@custom-variant short (@media (max-height: 640px) and (min-width: 768px));
 
 :root {
   --background: oklch(1 0 0);

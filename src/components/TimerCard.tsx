@@ -108,10 +108,10 @@ export function TimerCard() {
             </TabsList>
           </Tabs>
 
-          <div className="mt-8 flex flex-col items-center">
+          <div className="mt-8 flex flex-col items-center short:mt-4">
             <div
               className={cn(
-                'text-6xl font-bold tabular-nums mb-8 p-8 rounded-xl shadow-md',
+                'text-6xl font-bold tabular-nums mb-8 p-8 rounded-xl shadow-md short:mb-4 short:p-6',
                 timer.mode === 'work' ? 'text-green-600' : 'text-red-600',
                 'bg-background',
               )}
