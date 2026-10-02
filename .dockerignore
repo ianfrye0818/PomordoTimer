@@ -1,0 +1,16 @@
+node_modules
+.output
+.nitro
+.tanstack
+.vscode
+.git
+.github
+.migration
+.cursor
+.vscode
+.jetbrains
+.env
+.env.*
+dist
+dist-ssr
+*.md
