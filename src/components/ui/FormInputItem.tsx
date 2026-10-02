@@ -63,20 +63,14 @@ export function FormInputItem<T extends z.ZodTypeAny>({
                 {props.required && <span className="text-red-500">*</span>}
               </FormLabel>
             )}
-            <FormControl>
-              <div className="relative">
-                <Input
-                  placeholder={placeholder}
-                  className={cn(
-                    'w-full',
-                    isError && 'border-red-500',
-                    className,
-                  )}
-                  type={shouldShowPassword()}
-                  {...field}
-                  {...props}
-                />
-              </div>
+            <FormControl render={<div className="relative" />}>
+              <Input
+                placeholder={placeholder}
+                className={cn('w-full', isError && 'border-red-500', className)}
+                type={shouldShowPassword()}
+                {...field}
+                {...props}
+              />
             </FormControl>
             {formDescription && (
               <FormDescription className="text-sm text-gray-500">
