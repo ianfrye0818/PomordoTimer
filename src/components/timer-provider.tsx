@@ -1,3 +1,4 @@
+import type { Task } from '@/lib/taskSchema'
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 
 export type Mode = 'work' | 'shortBreak' | 'longBreak'
@@ -12,13 +13,6 @@ export class TimerError extends Error {
     super(message)
     this.name = 'TimerError'
   }
-}
-
-export type Task = {
-  id: string
-  text: string
-  isCompleted: boolean
-  order: number
 }
 
 export type Settings = {
@@ -226,10 +220,9 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   }
 
   const addTask = (task: Task) => {
-    const id = crypto.randomUUID()
     const activeTasks = tasks.filter((t) => !t.isCompleted)
     const completedTasks = tasks.filter((t) => t.isCompleted)
-    const newTask = { ...task, id, order: activeTasks.length }
+    const newTask = { ...task, order: activeTasks.length }
     // Add new task to active tasks, keep completed tasks at the end
     const newTasks = [
       ...activeTasks.map((t, index) => ({ ...t, order: index })),
